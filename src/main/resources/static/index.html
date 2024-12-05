@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Phòng Chat Online</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+<div id="username-page">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <h1 class="title">Chào mừng đến với Phòng Chat</h1>
+            <p>Hãy nhập tên của bạn để bắt đầu trò chuyện</p>
+            <form id="usernameForm">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="name" placeholder="Tên của bạn" required>
+                </div>
+                <div id="error-message" style="display: none; color: red; margin-bottom: 10px;">
+                    <!-- Thông báo lỗi sẽ được hiển thị ở đây -->
+                </div>
+                <button type="submit">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Vào phòng chat
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="chat-page" class="">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-left">
+                <i class="fas fa-comments"></i>
+                <h2>Phòng Chat Online</h2>
+            </div>
+            <div class="header-right">
+                <div class="online-status">
+                    <i class="fas fa-circle"></i>
+                    <span class="online-count">0</span>
+                    <span>Online</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <div class="slider round">
+                        <div class="sun-moon">
+                            <svg viewBox="0 0 100 100" class="moon-dot" id="moon-dot-1">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="moon-dot" id="moon-dot-2">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="moon-dot" id="moon-dot-3">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="light-ray" id="light-ray-1">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="light-ray" id="light-ray-2">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="light-ray" id="light-ray-3">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="cloud-dark" id="cloud-1">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="cloud-dark" id="cloud-2">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="cloud-dark" id="cloud-3">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="cloud-light" id="cloud-4">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="cloud-light" id="cloud-5">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                            <svg viewBox="0 0 100 100" class="cloud-light" id="cloud-6">
+                                <circle r="50" cy="50" cx="50"></circle>
+                            </svg>
+                        </div>
+                        <div class="stars">
+                            <svg viewBox="0 0 20 20" class="star" id="star-1">
+                                <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z"></path>
+                            </svg>
+                            <svg viewBox="0 0 20 20" class="star" id="star-2">
+                                <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z"></path>
+                            </svg>
+                            <svg viewBox="0 0 20 20" class="star" id="star-3">
+                                <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z"></path>
+                            </svg>
+                            <svg viewBox="0 0 20 20" class="star" id="star-4">
+                                <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        <div class="chat-area">
+            <div class="connecting">
+                <i class="fas fa-spinner fa-spin"></i> Đang kết nối...
+            </div>
+            <ul id="messageArea"></ul>
+        </div>
+        <form id="messageForm">
+            <div class="message-input-container">
+                <div class="message-input">
+                    <input type="text" id="message" placeholder="Nhập tin nhắn..." autocomplete="off">
+                    <div class="message-actions">
+                        <button type="button" id="emojiButton" class="toolbar-button">
+                            <i class="far fa-smile"></i>
+                        </button>
+                        <button type="submit" class="send-button">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Emoji picker -->
+                <div id="emojiPicker" class="emoji-picker hidden">
+                    <div class="emoji-categories">
+                        <button class="emoji-category active" data-category="smileys">😊</button>
+                        <button class="emoji-category" data-category="animals">🐶</button>
+                        <button class="emoji-category" data-category="foods">🍔</button>
+                        <button class="emoji-category" data-category="activities">⚽</button>
+                        <button class="emoji-category" data-category="objects">💡</button>
+                    </div>
+                    <div class="emoji-list"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

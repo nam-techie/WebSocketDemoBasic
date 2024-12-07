@@ -9,6 +9,19 @@
     --message-bg: #f3f4f6;
     --header-bg: #6366f1;
     --header-text: #ffffff;
+    --message-bg: #f1f0f0;
+    --sender-color: #666;
+    --text-color: #333;
+    --self-message-bg: #0084ff;
+    --self-sender-color: rgba(255, 255, 255, 0.9);
+    --self-text-color: #fff;
+    --event-color: #666;
+    --self-event-color: #0084ff;
+    --self-event-tag-color: #666;
+    --self-avatar-bg: #0084ff;
+    --file-download-bg: rgba(0, 0, 0, 0.05);
+    --file-download-color: inherit;
+    --hover-bg: rgba(0, 0, 0, 0.02);
 }
 
 /* Dark mode colors */
@@ -22,6 +35,19 @@
     --message-bg: #2d3748;
     --header-bg: #374151;
     --header-text: #ffffff;
+    --message-bg: #2a2d3e;
+    --sender-color: #b0b3b8;
+    --text-color: #e4e6eb;
+    --self-message-bg: #0084ff;
+    --self-sender-color: rgba(255, 255, 255, 0.9);
+    --self-text-color: #fff;
+    --event-color: #b0b3b8;
+    --self-event-color: #4599ff;
+    --self-event-tag-color: #b0b3b8;
+    --self-avatar-bg: #0084ff;
+    --file-download-bg: rgba(255, 255, 255, 0.1);
+    --file-download-color: #e4e6eb;
+    --hover-bg: rgba(255, 255, 255, 0.02);
 }
 
 * {
@@ -272,7 +298,7 @@ body {
 /* Style khi focus vào input */
 .message-input:focus-within {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .message-input input {
@@ -554,7 +580,78 @@ body {
 /* Style cho tin nhắn chat */
 .chat-message {
     display: flex;
-    margin-bottom: 20px;
+    margin: 15px;
+    align-items: flex-start;
+}
+
+/* Style cho tin nhắn của người khác (mặc định) */
+.message-content {
+    margin-left: 10px;
+    background: var(--message-bg, #f1f0f0);
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 70%;
+}
+
+/* Style cho tin nhắn của bản thân */
+.chat-message.self {
+    flex-direction: row-reverse;
+}
+
+.chat-message.self .message-content {
+    margin-left: 0;
+    margin-right: 10px;
+    background: var(--self-message-bg, #0084ff);
+}
+
+.chat-message.self .message-sender {
+    text-align: right;
+    color: var(--self-sender-color, rgba(255, 255, 255, 0.9));
+}
+
+.chat-message.self .message-text {
+    color: var(--self-text-color, #fff);
+}
+
+/* Style cho event message (join/leave) */
+.event-message {
+    text-align: center;
+    margin: 10px 0;
+    padding: 5px;
+}
+
+.event-message p {
+    color: var(--event-color, #666);
+    font-size: 0.9em;
+    margin: 5px 0;
+}
+
+.event-message.self p {
+    color: var(--self-event-color, #0084ff);
+    font-weight: 500;
+}
+
+.event-message.self p::after {
+    content: ' (bạn)';
+    color: var(--self-event-tag-color, #666);
+    font-style: italic;
+}
+
+/* Avatar styles */
+.message-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    flex-shrink: 0;
+}
+
+.chat-message.self .message-avatar {
+    background: var(--self-avatar-bg, #0084ff) !important;
 }
 
 .title {
@@ -860,3 +957,188 @@ input:checked + .slider .stars {
     color: red;
     margin-bottom: 10px;
 }
+
+/* Các style cơ bản cho nút gửi ảnh */
+#imageButton {
+    display: inline-block;
+    cursor: pointer;
+    padding-bottom: 8px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+}
+
+
+#imageButton:hover {
+    background-color: #e0e0e0;
+}
+
+#imageButton i {
+    font-size: 18px;
+    color: #555;
+}
+
+/* Ẩn input file */
+#imageInput {
+    display: none;
+}
+
+/* Thêm hiệu ứng cho button gửi ảnh */
+#imageButton:hover i {
+    color: #007bff; /* Màu thay đổi khi hover */
+}
+
+/* Nút gửi tin nhắn */
+.send-button {
+    background-color: #4CAF50; /* Màu nền button */
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.send-button:hover {
+    background-color: #45a049;
+}
+
+.send-button i {
+    font-size: 18px;
+}
+
+/* Khu vực input tin nhắn */
+.message-input-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.message-input {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.message-actions {
+    display: flex;
+    align-items: center;
+}
+
+.toolbar-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    margin-right: 10px;
+    color: #555;
+}
+
+.toolbar-button:hover {
+    color: #007bff; /* Màu khi hover */
+}
+
+.file-content {
+    margin-top: 5px;
+}
+
+.file-download {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-top: 5px;
+}
+
+.file-download i {
+    margin-right: 5px;
+}
+
+.file-content img, .file-content video {
+    border-radius: 5px;
+    margin-top: 5px;
+    max-width: 300px;
+    max-height: 200px;
+    object-fit: contain;
+}
+
+#loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.error-message {
+    background-color: #ff4444;
+    color: white;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* File message styles */
+.file-content {
+    margin-top: 5px;
+}
+
+.file-content img {
+    max-width: 300px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.file-content video {
+    max-width: 300px;
+    border-radius: 8px;
+}
+
+.file-download {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--file-download-bg, rgba(0, 0, 0, 0.05));
+    border-radius: 8px;
+    color: var(--file-download-color, inherit);
+    text-decoration: none;
+    margin-top: 5px;
+}
+
+.file-download i {
+    margin-right: 8px;
+}
+
+/* Dark mode cho file download */
+[data-theme='dark'] .file-download {
+    --file-download-bg: rgba(255, 255, 255, 0.1);
+    --file-download-color: #e4e6eb;
+}
+
+/* Hover effects */
+.chat-message:hover {
+    background: var(--hover-bg, rgba(0, 0, 0, 0.02));
+}
+
+[data-theme='dark'] .chat-message:hover {
+    background: var(--hover-bg, rgba(255, 255, 255, 0.02));
+}
+
+
+

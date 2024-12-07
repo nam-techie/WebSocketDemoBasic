@@ -7,15 +7,33 @@ public class ChatMessage {
     private MessageType type;
     private String content;
     private String sender;
+    private String fileContent;
+    private String fileType;
+    private String fileName;
 
-    // Constructor
+    // Constructor mặc định
+    public ChatMessage() {
+    }
+
+    // Constructor cơ bản cho tin nhắn thông thường
     public ChatMessage(MessageType type, String content, String sender) {
         this.type = type;
         this.content = content;
         this.sender = sender;
     }
 
-    // Getter và Setter
+    // Constructor cho file message
+    public ChatMessage(MessageType type, String content, String sender, 
+                      String fileContent, String fileType, String fileName) {
+        this.type = type;
+        this.content = content;
+        this.sender = sender;
+        this.fileContent = fileContent;
+        this.fileType = fileType;
+        this.fileName = fileName;
+    }
+
+    // Getters và Setters
     public MessageType getType() {
         return type;
     }
@@ -40,6 +58,30 @@ public class ChatMessage {
         this.sender = sender;
     }
 
+    public String getFileContent() {
+        return fileContent;
+    }
+
+    public void setFileContent(String fileContent) {
+        this.fileContent = fileContent;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
     // Phương thức equals() và hashCode()
     @Override
     public boolean equals(Object obj) {
@@ -61,6 +103,9 @@ public class ChatMessage {
                 "type=" + type +
                 ", content='" + content + '\'' +
                 ", sender='" + sender + '\'' +
+                ", fileName='" + fileName + '\'' +
+                ", fileType='" + fileType + '\'' +
+                ", fileContent='" + fileContent + '\'' +
                 '}';
     }
 
@@ -69,6 +114,9 @@ public class ChatMessage {
         private MessageType type;
         private String content;
         private String sender;
+        private String fileName;
+        private String fileType;
+        private String fileContent;
 
         public Builder setType(MessageType type) {
             this.type = type;
@@ -85,8 +133,23 @@ public class ChatMessage {
             return this;
         }
 
+        public Builder setFileName(String fileName) {
+            this.fileName = fileName;
+            return this;
+        }
+
+        public Builder setFileType(String fileType) {
+            this.fileType = fileType;
+            return this;
+        }
+
+        public Builder setFileContent(String fileContent) {
+            this.fileContent = fileContent;
+            return this;
+        }
+
         public ChatMessage build() {
-            return new ChatMessage(type, content, sender);
+            return new ChatMessage(type, content, sender, fileName, fileType, fileContent);
         }
     }
 }

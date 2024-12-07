@@ -109,45 +109,86 @@ function sendMessage(event) {
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
     var messageElement = document.createElement('li');
-
-    if (message.type === 'ERROR') {
-        console.log('Error received:', message.content); // Debug log lỗi
-        showError(message.content);
-        usernamePage.classList.remove('hidden');
-        chatPage.classList.add('hidden');
-    }
-    else if (message.type === 'JOIN') {
+    
+    // Kiểm tra xem tin nhắn có phải của user hiện tại không
+    const isSelf = message.sender === username;
+    
+    if (message.type === 'JOIN') {
         messageElement.classList.add('event-message');
+        if (isSelf) messageElement.classList.add('self');
         var textElement = document.createElement('p');
         textElement.textContent = message.sender + ' đã tham gia phòng chat';
         messageElement.appendChild(textElement);
     } else if (message.type === 'LEAVE') {
         messageElement.classList.add('event-message');
+        if (isSelf) messageElement.classList.add('self');
         var textElement = document.createElement('p');
         textElement.textContent = message.sender + ' đã rời phòng chat';
         messageElement.appendChild(textElement);
     } else {
         messageElement.classList.add('chat-message');
+        if (isSelf) messageElement.classList.add('self');
 
-        // Tạo avatar
+        // Avatar
         var avatarElement = document.createElement('div');
         avatarElement.classList.add('message-avatar');
         avatarElement.style.background = getAvatarColor(message.sender);
         avatarElement.textContent = message.sender.charAt(0).toUpperCase();
 
-        // Tạo container cho nội dung tin nhắn
+        // Message content container
         var messageContent = document.createElement('div');
         messageContent.classList.add('message-content');
 
-        // Tên người gửi
+        // Sender name
         var senderElement = document.createElement('div');
         senderElement.classList.add('message-sender');
         senderElement.textContent = message.sender;
 
-        // Nội dung tin nhắn
+        // Message text
         var textElement = document.createElement('div');
         textElement.classList.add('message-text');
-        textElement.textContent = message.content;
+        
+        if (message.type === 'FILE') {
+            // Tạo container cho nội dung tin nhắn
+            var fileElement = document.createElement('div');
+            fileElement.classList.add('file-content');
+
+            if (message.fileType && message.fileType.startsWith('image/')) {
+                // Hiển thị ảnh
+                var img = document.createElement('img');
+                img.src = `data:${message.fileType};base64,${message.fileContent}`;
+                img.style.maxWidth = '300px';
+                img.style.maxHeight = '200px';
+                img.style.cursor = 'pointer';
+                
+                // Thêm chức năng click để xem ảnh full size
+                img.onclick = function() {
+                    window.open(img.src, '_blank');
+                };
+                
+                fileElement.appendChild(img);
+            } else if (message.fileType && message.fileType.startsWith('video/')) {
+                // Hiển thị video
+                var video = document.createElement('video');
+                video.src = `data:${message.fileType};base64,${message.fileContent}`;
+                video.controls = true;
+                video.style.maxWidth = '300px';
+                fileElement.appendChild(video);
+            } else if (message.fileContent) {
+                // Hiển thị link tải xuống cho các file khác
+                var link = document.createElement('a');
+                link.href = `data:${message.fileType};base64,${message.fileContent}`;
+                link.download = message.fileName || 'download';
+                link.innerHTML = `<i class="fas fa-file"></i> ${message.fileName || 'Tải xuống file'}`;
+                link.classList.add('file-download');
+                fileElement.appendChild(link);
+            }
+
+            messageContent.appendChild(senderElement);
+            messageContent.appendChild(fileElement);
+        } else {
+            textElement.textContent = message.content;
+        }
 
         messageContent.appendChild(senderElement);
         messageContent.appendChild(textElement);
@@ -183,7 +224,7 @@ messageForm.addEventListener('submit', sendMessage, true)
 // Danh sách emoji theo category
 const emojis = {
     smileys: ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘'],
-    animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸'],
+    animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸'],
     foods: ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥'],
     activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🏒', '🏑', '🥍'],
     objects: ['💡', '🔦', '🕯', '📱', '📲', '💻', '⌨', '🖥', '🖨', '🖱', '🖲', '🕹', '🗜', '💽']
@@ -286,3 +327,52 @@ function addOnlineCountElement() {
 
 // Gọi hàm này khi trang được load
 document.addEventListener('DOMContentLoaded', addOnlineCountElement);
+
+// Thêm xử lý file input
+const fileInput = document.getElementById('imageInput');
+fileInput.addEventListener('change', handleFileSelect);
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Kiểm tra kích thước file (giới hạn 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('File quá lớn. Vui lòng chọn file nhỏ hơn 5MB');
+        return;
+    }
+
+    console.log('Selected file:', file);
+    console.log('File type:', file.type);
+    console.log('File size:', file.size);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const fileContent = e.target.result.split(',')[1]; // Lấy phần Base64 sau dấu phẩy
+        
+        console.log('File content length:', fileContent.length);
+        
+        // Gửi file qua WebSocket
+        if (stompClient) {
+            const chatMessage = {
+                type: 'FILE',
+                sender: username,
+                content: file.name, // Sử dụng tên file làm content
+                fileContent: fileContent,
+                fileName: file.name,
+                fileType: file.type
+            };
+
+            console.log('Sending file message:', chatMessage); // Debug log
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+        }
+    };
+
+    // Xử lý lỗi khi đọc file
+    reader.onerror = function(error) {
+        console.error('Error reading file:', error);
+        showError('Lỗi khi đọc file. Vui lòng thử lại.');
+    };
+
+    reader.readAsDataURL(file);
+}

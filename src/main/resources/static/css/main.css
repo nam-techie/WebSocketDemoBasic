@@ -290,9 +290,10 @@ body {
     background: var(--message-bg);
     border: 1px solid var(--border-color);
     border-radius: 24px;
-    padding: 6px;
+    padding: 8px 16px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 10px;
 }
 
 /* Style khi focus vào input */
@@ -305,7 +306,7 @@ body {
     flex: 1;
     border: none;
     outline: none;
-    padding: 10px 16px;
+    padding: 10px 0;
     font-size: 15px;
     background: transparent;
     color: var(--text-color);
@@ -319,7 +320,26 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 8px;
+    z-index: 1;
+}
+
+.toolbar-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 18px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.toolbar-button i {
+    display: inline-block !important;
 }
 
 /* Style cho nút emoji */
@@ -327,7 +347,7 @@ body {
     background: transparent;
     border: none;
     padding: 8px;
-    font-size: 20px;
+    font-size: 18px;
     color: #9ca3af;
     cursor: pointer;
     border-radius: 50%;
@@ -369,24 +389,18 @@ body {
 /* Dark mode adjustments */
 [data-theme='dark'] .message-input {
     background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme='dark'] .message-input:focus-within {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-
-[data-theme='dark'] .toolbar-button {
-    color: #9ca3af;
-}
-
-[data-theme='dark'] .toolbar-button:hover {
-    background: rgba(255, 255, 255, 0.1);
 }
 
 [data-theme='dark'] .message-input input::placeholder {
     color: #6b7280;
+}
+
+[data-theme='dark'] .toolbar-button {
+    color: #6b7280;
+}
+
+[data-theme='dark'] .toolbar-button:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Emoji Picker */
@@ -1138,6 +1152,102 @@ input:checked + .slider .stars {
 
 [data-theme='dark'] .chat-message:hover {
     background: var(--hover-bg, rgba(255, 255, 255, 0.02));
+}
+
+/* Style đặc biệt cho nút voice */
+#voiceButton {
+    color: #9ca3af;
+}
+
+#voiceButton:hover {
+    color: #ef4444; /* Màu đỏ khi hover */
+}
+
+#voiceButton.recording {
+    color: #ef4444;
+    animation: pulse 1.5s infinite;
+}
+
+/* Animation cho trạng thái recording */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Style cho nút gửi */
+.send-button {
+    background: var(--primary-color);
+    border: none;
+    padding: 8px;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.send-button:hover {
+    background: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .message-input {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .message-input input::placeholder {
+    color: #6b7280;
+}
+
+[data-theme='dark'] .toolbar-button {
+    color: #6b7280;
+}
+
+[data-theme='dark'] .toolbar-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Audio message styles */
+.audio-message {
+    margin-top: 8px;
+}
+
+.audio-message audio {
+    max-width: 250px;
+    height: 40px;
+    border-radius: 20px;
+    background: var(--primary-color);
+}
+
+/* Recording button styles */
+#voiceButton.recording {
+    color: #ef4444;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 

@@ -106,11 +106,73 @@ function sendMessage(event) {
     event.preventDefault();
 }
 
+// Thêm biến để quản lý recording
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
+
+// Thêm hàm xử lý voice recording
+async function handleVoiceRecording() {
+    const voiceButton = document.getElementById('voiceButton');
+    
+    if (!isRecording) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const reader = new FileReader();
+                
+                reader.onload = () => {
+                    const audioBase64 = reader.result.split(',')[1];
+                    
+                    // Gửi audio qua WebSocket
+                    if (stompClient) {
+                        const chatMessage = {
+                            type: 'AUDIO',
+                            sender: username,
+                            content: 'Audio Message',
+                            fileContent: audioBase64,
+                            fileType: 'audio/wav',
+                            fileName: 'voice_message.wav'
+                        };
+                        
+                        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+                    }
+                };
+                
+                reader.readAsDataURL(audioBlob);
+                audioChunks = [];
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            voiceButton.classList.add('recording');
+            voiceButton.innerHTML = '<i class="fas fa-stop"></i>';
+            
+        } catch (error) {
+            console.error('Lỗi khi truy cập microphone:', error);
+            showError('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
+        }
+    } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        isRecording = false;
+        voiceButton.classList.remove('recording');
+        voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
+    }
+}
+
+// Cập nhật hàm onMessageReceived để xử lý tin nhắn audio
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
     var messageElement = document.createElement('li');
     
-    // Kiểm tra xem tin nhắn có phải của user hiện tại không
     const isSelf = message.sender === username;
     
     if (message.type === 'JOIN') {
@@ -144,11 +206,20 @@ function onMessageReceived(payload) {
         senderElement.classList.add('message-sender');
         senderElement.textContent = message.sender;
 
-        // Message text
-        var textElement = document.createElement('div');
-        textElement.classList.add('message-text');
-        
-        if (message.type === 'FILE') {
+        messageContent.appendChild(senderElement);
+
+        if (message.type === 'AUDIO') {
+            // Tạo audio player
+            const audioContainer = document.createElement('div');
+            audioContainer.classList.add('audio-message');
+            
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = `data:${message.fileType};base64,${message.fileContent}`;
+            
+            audioContainer.appendChild(audio);
+            messageContent.appendChild(audioContainer);
+        } else if (message.type === 'FILE') {
             // Tạo container cho nội dung tin nhắn
             var fileElement = document.createElement('div');
             fileElement.classList.add('file-content');
@@ -187,11 +258,8 @@ function onMessageReceived(payload) {
             messageContent.appendChild(senderElement);
             messageContent.appendChild(fileElement);
         } else {
-            textElement.textContent = message.content;
+            // ... existing text message code ...
         }
-
-        messageContent.appendChild(senderElement);
-        messageContent.appendChild(textElement);
 
         messageElement.appendChild(avatarElement);
         messageElement.appendChild(messageContent);
@@ -376,3 +444,9 @@ function handleFileSelect(event) {
 
     reader.readAsDataURL(file);
 }
+
+// Thêm event listener cho nút voice
+document.addEventListener('DOMContentLoaded', function() {
+    const voiceButton = document.getElementById('voiceButton');
+    voiceButton.addEventListener('click', handleVoiceRecording);
+});

@@ -36,21 +36,24 @@ public class WebSocketEventListener {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String username = headerAccessor.getFirstNativeHeader("username");
         
+        // Thêm log để debug
+        log.info("Received headers: {}", headerAccessor.toNativeHeaderMap());
         log.info("Connect event received for username: {}", username);
 
-        if (username == null || username.trim().isEmpty()) {
-            log.error("Received null or empty username in WebSocket connection");
-            return;
-        }
-
-        // Kiểm tra và xử lý người dùng mới kết nối
-        if (!onlineUsers.containsKey(username)) {
-            onlineUsers.put(username, LocalDateTime.now());
-            headerAccessor.getSessionAttributes().put("username", username);
-            
-            // Chỉ gửi số lượng người dùng online
-            messageTemplate.convertAndSend("/topic/online-count", onlineUsers.size());
-            printOnlineUsers();
+        // Kiểm tra username null trước khi xử lý
+        if (username != null) {
+            if (!onlineUsers.containsKey(username)) {
+                onlineUsers.put(username, LocalDateTime.now());
+                headerAccessor.getSessionAttributes().put("username", username);
+                
+                // Gửi số lượng người dùng online
+                int onlineCount = onlineUsers.size();
+                log.info("Current online users: {}", onlineCount);
+                messageTemplate.convertAndSend("/topic/online-count", String.valueOf(onlineCount));
+                printOnlineUsers();
+            }
+        } else {
+            log.warn("Received null username in connection event");
         }
     }
 
@@ -71,7 +74,7 @@ public class WebSocketEventListener {
                 // Gửi số lượng người dùng online sau khi người dùng rời đi
                 int onlineCount = onlineUsers.size();
                 log.info("Current online users after disconnect: {}", onlineCount);
-                messageTemplate.convertAndSend("/topic/online-count", onlineCount);
+                messageTemplate.convertAndSend("/topic/online-count", String.valueOf(onlineCount));
             }
         }
     }

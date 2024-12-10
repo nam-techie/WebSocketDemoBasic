@@ -40,9 +40,9 @@ async function checkUsername(username) {
 async function connect(event) {
     event.preventDefault();
     console.log('Connect function called');
-    
+
     let inputUsername = document.querySelector('#name').value.trim();
-    
+
     try {
         const response = await fetch('/api/check-username', {
             method: 'POST',
@@ -53,23 +53,31 @@ async function connect(event) {
         });
 
         const result = await response.json();
-        
+
         if (!result.available) {
             showError(result.message);
             return;
         }
 
-        // Sử dụng tên được tạo tự động nếu có
         username = result.generatedUsername || inputUsername;
-        console.log('Using username:', username);
-
-        usernamePage.classList.add('hidden');
-        chatPage.classList.remove('hidden');
+        const usernameInput = document.getElementById('username');
+        username = usernameInput.value;  // Gán username
+        console.log('Username:', username);  // Debug log
 
         var socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
 
-        stompClient.connect({}, onConnected, onError);
+        // Thêm username vào headers khi kết nối
+        const connectHeaders = {
+            username: username
+        };
+        console.log('Connecting with headers:', connectHeaders); // Debug log
+
+        stompClient.connect(
+            connectHeaders,
+            onConnected,
+            onError
+        );
     } catch (error) {
         console.error('Error during connection:', error);
         showError('Lỗi kết nối: ' + error.message);
@@ -78,17 +86,17 @@ async function connect(event) {
 
 function onConnected() {
     console.log('Connected successfully!');
-    
+
     // Subscribe to the Public Topic
     stompClient.subscribe('/topic/public', onMessageReceived);
-    
+
     // Subscribe to online count updates
     stompClient.subscribe('/topic/online-count', onOnlineCountReceived);
 
     // Tell your username to the server
     stompClient.send("/app/chat.addUser",
         {},
-        JSON.stringify({sender: username, type: 'JOIN'})
+        JSON.stringify({ sender: username, type: 'JOIN' })
     );
 
     // Yêu cầu số lượng người dùng online ngay khi kết nối thành công
@@ -108,14 +116,14 @@ function onError(error) {
 
 function sendMessage(event) {
     event.preventDefault();
-    
+
     const messageInput = document.getElementById('message');
     const messageContent = messageInput.value.trim();
-    
+
     try {
         if (window.pastedImage) {
             console.log('Sending file message with type:', window.pastedImage.type);
-            
+
             const chatMessage = {
                 type: 'FILE',
                 sender: username,
@@ -124,14 +132,14 @@ function sendMessage(event) {
                 fileName: window.pastedImage.name,
                 fileType: window.pastedImage.type
             };
-            
+
             console.log('Sending file message:', {
                 type: chatMessage.type,
                 sender: chatMessage.sender,
                 fileType: chatMessage.fileType,
                 fileName: chatMessage.fileName
             });
-            
+
             stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
             removePreview();
         } else {
@@ -142,7 +150,7 @@ function sendMessage(event) {
             };
             stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
         }
-        
+
         messageInput.value = '';
     } catch (error) {
         console.error('Error sending message:', error);
@@ -157,7 +165,7 @@ function validateMessage(chatMessage) {
         hasFileContent: !!chatMessage.fileContent,
         fileType: chatMessage.fileType
     });
-    
+
     if (chatMessage.type === 'FILE') {
         if (!chatMessage.fileContent) {
             throw new Error('Thiếu nội dung file');
@@ -183,12 +191,12 @@ let isRecording = false;
 // Thêm hàm xử lý voice recording
 async function handleVoiceRecording() {
     const voiceButton = document.getElementById('voiceButton');
-    
+
     if (!isRecording) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
-            
+
             mediaRecorder.ondataavailable = (event) => {
                 audioChunks.push(event.data);
             };
@@ -196,10 +204,10 @@ async function handleVoiceRecording() {
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                 const reader = new FileReader();
-                
+
                 reader.onload = () => {
                     const audioBase64 = reader.result.split(',')[1];
-                    
+
                     // Gửi audio qua WebSocket
                     if (stompClient) {
                         const chatMessage = {
@@ -210,11 +218,11 @@ async function handleVoiceRecording() {
                             fileType: 'audio/wav',
                             fileName: 'voice_message.wav'
                         };
-                        
+
                         stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
                     }
                 };
-                
+
                 reader.readAsDataURL(audioBlob);
                 audioChunks = [];
             };
@@ -223,7 +231,7 @@ async function handleVoiceRecording() {
             isRecording = true;
             voiceButton.classList.add('recording');
             voiceButton.innerHTML = '<i class="fas fa-stop"></i>';
-            
+
         } catch (error) {
             console.error('Lỗi khi truy cập microphone:', error);
             showError('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
@@ -241,9 +249,9 @@ async function handleVoiceRecording() {
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
     var messageElement = document.createElement('li');
-    
+
     const isSelf = message.sender === username;
-    
+
     if (message.type === 'JOIN') {
         messageElement.classList.add('event-message');
         if (isSelf) messageElement.classList.add('self');
@@ -265,7 +273,7 @@ function onMessageReceived(payload) {
         senderElement.classList.add('message-sender');
         senderElement.textContent = message.sender;
         messageElement.appendChild(senderElement);
-        
+
         // Container cho avatar và nội dung
         var messageContainer = document.createElement('div');
         messageContainer.classList.add('message-container');
@@ -283,11 +291,11 @@ function onMessageReceived(payload) {
         if (message.type === 'AUDIO') {
             const audioContainer = document.createElement('div');
             audioContainer.classList.add('audio-message');
-            
+
             const audio = document.createElement('audio');
             audio.controls = true;
             audio.src = `data:${message.fileType};base64,${message.fileContent}`;
-            
+
             audioContainer.appendChild(audio);
             messageContent.appendChild(audioContainer);
         } else if (message.type === 'FILE') {
@@ -300,7 +308,7 @@ function onMessageReceived(payload) {
                 img.src = `data:${message.fileType};base64,${message.fileContent}`;
                 img.style.maxWidth = '200px';
                 img.style.cursor = 'pointer';
-                img.onclick = function() {
+                img.onclick = function () {
                     window.open(img.src, '_blank');
                 };
                 fileElement.appendChild(img);
@@ -420,10 +428,10 @@ document.addEventListener('DOMContentLoaded', initEmojiPicker);
 // Dark mode toggle functionality
 document.addEventListener('DOMContentLoaded', () => {
     const darkModeToggle = document.getElementById('darkModeToggle');
-    
+
     // Debug: Kiểm tra trạng thái theme
     console.log('Current theme:', document.documentElement.getAttribute('data-theme'));
-    
+
     darkModeToggle.addEventListener('change', () => {
         const newTheme = darkModeToggle.checked ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', newTheme);
@@ -490,11 +498,11 @@ function handleFileSelect(event) {
     console.log('File size:', file.size);
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const fileContent = e.target.result.split(',')[1]; // Lấy phần Base64 sau dấu phẩy
-        
+
         console.log('File content length:', fileContent.length);
-        
+
         // Gửi file qua WebSocket
         if (stompClient) {
             const chatMessage = {
@@ -512,7 +520,7 @@ function handleFileSelect(event) {
     };
 
     // Xử lý lỗi khi đọc file
-    reader.onerror = function(error) {
+    reader.onerror = function (error) {
         console.error('Error reading file:', error);
         showError('Lỗi khi đọc file. Vui lòng thử lại.');
     };
@@ -521,7 +529,7 @@ function handleFileSelect(event) {
 }
 
 // Thêm event listener cho nút voice
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const voiceButton = document.getElementById('voiceButton');
     voiceButton.addEventListener('click', handleVoiceRecording);
 });
@@ -548,14 +556,14 @@ function isValidFileType(fileType) {
 // Hàm xử lý paste
 function handlePaste(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-    
+
     for (let item of items) {
         console.log('Pasted item type:', item.type); // Debug log
-        
+
         if (item.type.indexOf('image') === 0) {
             e.preventDefault();
             const blob = item.getAsFile();
-            
+
             // Kiểm tra kích thước file
             if (blob.size > 10 * 1024 * 1024) {
                 showError('File quá lớn. Vui lòng chọn file nhỏ hơn 10MB');
@@ -563,12 +571,12 @@ function handlePaste(e) {
             }
 
             const reader = new FileReader();
-            
-            reader.onload = function(event) {
+
+            reader.onload = function (event) {
                 try {
                     const base64String = event.target.result.split(',')[1];
                     console.log('Image type:', item.type); // Debug log
-                    
+
                     const imagePreview = document.getElementById('image-preview');
                     imagePreview.innerHTML = `
                         <div class="preview-container">
@@ -579,30 +587,30 @@ function handlePaste(e) {
                         </div>
                     `;
                     imagePreview.classList.remove('hidden');
-                    
+
                     // Lưu thông tin file với type cụ thể
                     window.pastedImage = {
                         content: base64String,
                         type: item.type || 'image/png', // Fallback to PNG if type is undefined
                         name: `image_${Date.now()}.${(item.type || 'image/png').split('/')[1]}`
                     };
-                    
+
                     console.log('Stored image info:', {
                         type: window.pastedImage.type,
                         name: window.pastedImage.name
                     });
-                    
+
                 } catch (error) {
                     console.error('Error processing image:', error);
                     showError('Lỗi khi xử lý ảnh. Vui lòng thử lại.');
                 }
             };
-            
-            reader.onerror = function(error) {
+
+            reader.onerror = function (error) {
                 console.error('Error reading file:', error);
                 showError('Lỗi khi đọc file. Vui lòng thử lại.');
             };
-            
+
             reader.readAsDataURL(blob);
         }
     }

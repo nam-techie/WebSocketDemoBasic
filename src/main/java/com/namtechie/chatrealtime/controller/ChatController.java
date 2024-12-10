@@ -99,8 +99,9 @@ public class ChatController {
 
     @MessageMapping("/chat.getOnlineCount")
     @SendTo("/topic/online-count")
-    public int getOnlineCount() {
+    public String getOnlineCount() {
         int count = webSocketEventListener.getOnlineUsers().size();
-        return count;
+        logger.info("Sending online count: {}", count);
+        return String.valueOf(count);
     }
 }

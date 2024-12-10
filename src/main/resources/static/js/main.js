@@ -40,26 +40,40 @@ async function checkUsername(username) {
 async function connect(event) {
     event.preventDefault();
     console.log('Connect function called');
-    username = document.querySelector('#name').value.trim();
+    
+    let inputUsername = document.querySelector('#name').value.trim();
+    
+    try {
+        const response = await fetch('/api/check-username', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: inputUsername })
+        });
 
-    if (!username) {
-        alert("Vui lòng nhập tên người dùng hợp lệ.");
-        return;
+        const result = await response.json();
+        
+        if (!result.available) {
+            showError(result.message);
+            return;
+        }
+
+        // Sử dụng tên được tạo tự động nếu có
+        username = result.generatedUsername || inputUsername;
+        console.log('Using username:', username);
+
+        usernamePage.classList.add('hidden');
+        chatPage.classList.remove('hidden');
+
+        var socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, onConnected, onError);
+    } catch (error) {
+        console.error('Error during connection:', error);
+        showError('Lỗi kết nối: ' + error.message);
     }
-
-    console.log('Checking username:', username);
-    const checkResult = await checkUsername(username);
-    console.log('Check result:', checkResult);
-
-    if (!checkResult.available) {
-        showError(checkResult.message);
-        return;
-    }
-
-    console.log('Attempting WebSocket connection...');
-    var socket = new SockJS('/ws');
-    stompClient = Stomp.over(socket);
-    stompClient.connect({ username: username }, onConnected, onError);
 }
 
 function onConnected() {
@@ -93,17 +107,72 @@ function onError(error) {
 }
 
 function sendMessage(event) {
-    var messageContent = messageInput.value.trim();
-    if(messageContent && stompClient) {
-        var chatMessage = {
-            sender: username,
-            content: messageInput.value,
-            type: 'CHAT'
-        };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-        messageInput.value = '';
-    }
     event.preventDefault();
+    
+    const messageInput = document.getElementById('message');
+    const messageContent = messageInput.value.trim();
+    
+    try {
+        if (window.pastedImage) {
+            console.log('Sending file message with type:', window.pastedImage.type);
+            
+            const chatMessage = {
+                type: 'FILE',
+                sender: username,
+                content: messageContent || 'Đã gửi một hình ảnh',
+                fileContent: window.pastedImage.content,
+                fileName: window.pastedImage.name,
+                fileType: window.pastedImage.type
+            };
+            
+            console.log('Sending file message:', {
+                type: chatMessage.type,
+                sender: chatMessage.sender,
+                fileType: chatMessage.fileType,
+                fileName: chatMessage.fileName
+            });
+            
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+            removePreview();
+        } else {
+            const chatMessage = {
+                type: 'CHAT',
+                content: messageContent,
+                sender: username
+            };
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+        }
+        
+        messageInput.value = '';
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showError('Lỗi khi gửi tin nhắn: ' + error.message);
+    }
+}
+
+// Thêm hàm để kiểm tra kích thước và loại tin nhắn
+function validateMessage(chatMessage) {
+    console.log('Validating message:', {
+        type: chatMessage.type,
+        hasFileContent: !!chatMessage.fileContent,
+        fileType: chatMessage.fileType
+    });
+    
+    if (chatMessage.type === 'FILE') {
+        if (!chatMessage.fileContent) {
+            throw new Error('Thiếu nội dung file');
+        }
+        if (!chatMessage.fileType) {
+            throw new Error('Thiếu loại file');
+        }
+        // Kiểm tra kích thước base64
+        const sizeInBytes = chatMessage.fileContent.length * 0.75; // Ước tính kích thước thực từ base64
+        console.log('File size in bytes:', sizeInBytes);
+        if (sizeInBytes > 5 * 1024 * 1024) { // 5MB limit
+            throw new Error('File quá lớn (giới hạn 5MB)');
+        }
+    }
+    return true;
 }
 
 // Thêm biến để quản lý recording
@@ -191,6 +260,16 @@ function onMessageReceived(payload) {
         messageElement.classList.add('chat-message');
         if (isSelf) messageElement.classList.add('self');
 
+        // Tên người gửi
+        var senderElement = document.createElement('div');
+        senderElement.classList.add('message-sender');
+        senderElement.textContent = message.sender;
+        messageElement.appendChild(senderElement);
+        
+        // Container cho avatar và nội dung
+        var messageContainer = document.createElement('div');
+        messageContainer.classList.add('message-container');
+
         // Avatar
         var avatarElement = document.createElement('div');
         avatarElement.classList.add('message-avatar');
@@ -201,15 +280,7 @@ function onMessageReceived(payload) {
         var messageContent = document.createElement('div');
         messageContent.classList.add('message-content');
 
-        // Sender name
-        var senderElement = document.createElement('div');
-        senderElement.classList.add('message-sender');
-        senderElement.textContent = message.sender;
-
-        messageContent.appendChild(senderElement);
-
         if (message.type === 'AUDIO') {
-            // Tạo audio player
             const audioContainer = document.createElement('div');
             audioContainer.classList.add('audio-message');
             
@@ -220,33 +291,26 @@ function onMessageReceived(payload) {
             audioContainer.appendChild(audio);
             messageContent.appendChild(audioContainer);
         } else if (message.type === 'FILE') {
-            // Tạo container cho nội dung tin nhắn
+            // Xử lý file message
             var fileElement = document.createElement('div');
             fileElement.classList.add('file-content');
 
             if (message.fileType && message.fileType.startsWith('image/')) {
-                // Hiển thị ảnh
                 var img = document.createElement('img');
                 img.src = `data:${message.fileType};base64,${message.fileContent}`;
-                img.style.maxWidth = '300px';
-                img.style.maxHeight = '200px';
+                img.style.maxWidth = '200px';
                 img.style.cursor = 'pointer';
-                
-                // Thêm chức năng click để xem ảnh full size
                 img.onclick = function() {
                     window.open(img.src, '_blank');
                 };
-                
                 fileElement.appendChild(img);
             } else if (message.fileType && message.fileType.startsWith('video/')) {
-                // Hiển thị video
                 var video = document.createElement('video');
                 video.src = `data:${message.fileType};base64,${message.fileContent}`;
                 video.controls = true;
                 video.style.maxWidth = '300px';
                 fileElement.appendChild(video);
             } else if (message.fileContent) {
-                // Hiển thị link tải xuống cho các file khác
                 var link = document.createElement('a');
                 link.href = `data:${message.fileType};base64,${message.fileContent}`;
                 link.download = message.fileName || 'download';
@@ -254,15 +318,19 @@ function onMessageReceived(payload) {
                 link.classList.add('file-download');
                 fileElement.appendChild(link);
             }
-
-            messageContent.appendChild(senderElement);
             messageContent.appendChild(fileElement);
         } else {
-            // ... existing text message code ...
+            // Xử lý text message
+            var textElement = document.createElement('p');
+            textElement.classList.add('message-text');
+            textElement.textContent = message.content;
+            messageContent.appendChild(textElement);
         }
 
-        messageElement.appendChild(avatarElement);
-        messageElement.appendChild(messageContent);
+        // Ghép các phần lại với nhau
+        messageContainer.appendChild(avatarElement);
+        messageContainer.appendChild(messageContent);
+        messageElement.appendChild(messageContainer);
     }
 
     messageArea.appendChild(messageElement);
@@ -293,7 +361,7 @@ messageForm.addEventListener('submit', sendMessage, true)
 const emojis = {
     smileys: ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '😉', '😌', '😍', '🥰', '😘'],
     animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸'],
-    foods: ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥'],
+    foods: ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍋', '🥥'],
     activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🏒', '🏑', '🥍'],
     objects: ['💡', '🔦', '🕯', '📱', '📲', '💻', '⌨', '🖥', '🖨', '🖱', '🖲', '🕹', '🗜', '💽']
 };
@@ -364,10 +432,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function showError(errorMessage) {
+function showError(message) {
     const errorElement = document.getElementById('error-message');
-    errorElement.textContent = errorMessage;
-    errorElement.style.display = 'block';
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        setTimeout(() => {
+            errorElement.style.display = 'none';
+        }, 3000);
+    } else {
+        alert(message);
+    }
 }
 
 // Thêm hàm xử lý số lượng người dùng online
@@ -450,3 +525,100 @@ document.addEventListener('DOMContentLoaded', function() {
     const voiceButton = document.getElementById('voiceButton');
     voiceButton.addEventListener('click', handleVoiceRecording);
 });
+
+// Thêm vào phần khởi tạo các event listeners
+document.getElementById('message').addEventListener('paste', handlePaste);
+
+// Hàm kiểm tra loại file
+function isValidFileType(fileType) {
+    const supportedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'video/mp4',
+        'video/webm',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    return supportedTypes.includes(fileType);
+}
+
+// Hàm xử lý paste
+function handlePaste(e) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    
+    for (let item of items) {
+        console.log('Pasted item type:', item.type); // Debug log
+        
+        if (item.type.indexOf('image') === 0) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            
+            // Kiểm tra kích thước file
+            if (blob.size > 10 * 1024 * 1024) {
+                showError('File quá lớn. Vui lòng chọn file nhỏ hơn 10MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                try {
+                    const base64String = event.target.result.split(',')[1];
+                    console.log('Image type:', item.type); // Debug log
+                    
+                    const imagePreview = document.getElementById('image-preview');
+                    imagePreview.innerHTML = `
+                        <div class="preview-container">
+                            <img src="${event.target.result}" alt="Pasted image">
+                            <div class="remove-image" onclick="removePreview()">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        </div>
+                    `;
+                    imagePreview.classList.remove('hidden');
+                    
+                    // Lưu thông tin file với type cụ thể
+                    window.pastedImage = {
+                        content: base64String,
+                        type: item.type || 'image/png', // Fallback to PNG if type is undefined
+                        name: `image_${Date.now()}.${(item.type || 'image/png').split('/')[1]}`
+                    };
+                    
+                    console.log('Stored image info:', {
+                        type: window.pastedImage.type,
+                        name: window.pastedImage.name
+                    });
+                    
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    showError('Lỗi khi xử lý ảnh. Vui lòng thử lại.');
+                }
+            };
+            
+            reader.onerror = function(error) {
+                console.error('Error reading file:', error);
+                showError('Lỗi khi đọc file. Vui lòng thử lại.');
+            };
+            
+            reader.readAsDataURL(blob);
+        }
+    }
+}
+
+// Sửa lại hàm removePreview
+function removePreview() {
+    const imagePreview = document.getElementById('image-preview');
+    imagePreview.innerHTML = '';
+    imagePreview.classList.add('hidden');
+    window.pastedImage = null;
+}
+
+// Thêm hàm debug để kiểm tra kích thước message
+function checkMessageSize(message) {
+    const size = new Blob([JSON.stringify(message)]).size;
+    console.log('Message size:', size, 'bytes');
+    return size;
+}

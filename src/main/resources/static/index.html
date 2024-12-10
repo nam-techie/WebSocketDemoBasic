@@ -20,7 +20,9 @@
             <form id="usernameForm">
                 <div class="input-group">
                     <i class="fas fa-user"></i>
-                    <input type="text" id="name" placeholder="Tên của bạn" required>
+                    <input type="text" 
+                           id="name" 
+                           placeholder="Tên của bạn (để trống để tạo tự động)">
                 </div>
                 <div id="error-message" style="display: none; color: red; margin-bottom: 10px;">
                     <!-- Thông báo lỗi sẽ được hiển thị ở đây -->
@@ -115,7 +117,12 @@
         <form id="messageForm">
             <div class="message-input-container">
                 <div class="message-input">
-                    <input type="text" id="message" placeholder="Nhập tin nhắn..." autocomplete="off">
+                    <input type="text" 
+                           id="message" 
+                           placeholder="Nhập tin nhắn..." 
+                           autocomplete="off"
+                           maxlength="640">
+                    <div id="image-preview" class="image-preview hidden"></div>
                     <div class="message-actions">
                         <button type="button" id="emojiButton" class="toolbar-button">
                             <i class="far fa-smile"></i>

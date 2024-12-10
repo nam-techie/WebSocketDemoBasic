@@ -9,6 +9,7 @@ import com.namtechie.chatrealtime.config.WebSocketEventListener;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/api")
@@ -26,9 +27,14 @@ public class UserController {
         Map<String, Object> response = new HashMap<>();
 
         if (username == null || username.trim().isEmpty()) {
-            response.put("available", false);
-            response.put("message", "Username không được để trống");
-            return ResponseEntity.badRequest().body(response);
+            username = generateRandomUsername();
+            while (onlineUsers.containsKey(username)) {
+                username = generateRandomUsername();
+            }
+            response.put("available", true);
+            response.put("message", "Đã tạo tên tự động");
+            response.put("generatedUsername", username);
+            return ResponseEntity.ok(response);
         }
 
         if (onlineUsers.containsKey(username)) {
@@ -40,6 +46,15 @@ public class UserController {
         response.put("available", true);
         response.put("message", "Username có thể sử dụng");
         return ResponseEntity.ok(response);
+    }
+
+    private String generateRandomUsername() {
+        Random random = new Random();
+        StringBuilder randomNumber = new StringBuilder();
+        for (int i = 0; i < 8; i++) {
+            randomNumber.append(random.nextInt(10));
+        }
+        return "user" + randomNumber.toString();
     }
 }
 

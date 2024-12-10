@@ -34,27 +34,13 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String username = headerAccessor.getFirstNativeHeader("username");
         
-        // Thêm log để debug
-        log.info("Received headers: {}", headerAccessor.toNativeHeaderMap());
-        log.info("Connect event received for username: {}", username);
-
-        // Kiểm tra username null trước khi xử lý
-        if (username != null) {
-            if (!onlineUsers.containsKey(username)) {
-                onlineUsers.put(username, LocalDateTime.now());
-                headerAccessor.getSessionAttributes().put("username", username);
-                
-                // Gửi số lượng người dùng online
-                int onlineCount = onlineUsers.size();
-                log.info("Current online users: {}", onlineCount);
-                messageTemplate.convertAndSend("/topic/online-count", String.valueOf(onlineCount));
-                printOnlineUsers();
-            }
-        } else {
-            log.warn("Received null username in connection event");
-        }
+        // Log để debug
+        log.info("New WebSocket connection established");
+        log.info("Session ID: {}", headerAccessor.getSessionId());
+        
+        // Không cần kiểm tra username tại đây nữa
+        // Username sẽ được xử lý trong ChatController.addUser()
     }
 
     @EventListener
@@ -64,18 +50,17 @@ public class WebSocketEventListener {
 
         if (username != null) {
             log.info("User disconnected: {}", username);
-            if (onlineUsers.containsKey(username)) {
-                onlineUsers.remove(username);
-                
-                // Gửi thông báo LEAVE
-                ChatMessage chatMessage = new ChatMessage(MessageType.LEAVE, null, username);
-                messageTemplate.convertAndSend("/topic/public", chatMessage);
-                
-                // Gửi số lượng người dùng online sau khi người dùng rời đi
-                int onlineCount = onlineUsers.size();
-                log.info("Current online users after disconnect: {}", onlineCount);
-                messageTemplate.convertAndSend("/topic/online-count", String.valueOf(onlineCount));
-            }
+            onlineUsers.remove(username);
+            
+            // Gửi thông báo LEAVE
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setType(MessageType.LEAVE);
+            chatMessage.setSender(username);
+            
+            messageTemplate.convertAndSend("/topic/public", chatMessage);
+            
+            // Cập nhật số lượng người dùng online
+            messageTemplate.convertAndSend("/topic/online-count", String.valueOf(onlineUsers.size()));
         }
     }
 

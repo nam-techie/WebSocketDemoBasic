@@ -60,22 +60,31 @@ async function connect(event) {
         }
 
         username = result.generatedUsername || inputUsername;
-        const usernameInput = document.getElementById('username');
-        username = usernameInput.value;  // Gán username
         console.log('Username:', username);  // Debug log
 
         var socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
 
-        // Thêm username vào headers khi kết nối
-        const connectHeaders = {
-            username: username
-        };
-        console.log('Connecting with headers:', connectHeaders); // Debug log
-
         stompClient.connect(
-            connectHeaders,
-            onConnected,
+            {},
+            function() {
+                stompClient.subscribe('/topic/public', onMessageReceived);
+                stompClient.subscribe('/topic/online-count', onOnlineCountReceived);
+                
+                stompClient.send("/app/chat.addUser",
+                    {},
+                    JSON.stringify({
+                        sender: username,
+                        type: 'JOIN'
+                    })
+                );
+                
+                stompClient.send("/app/chat.getOnlineCount", {}, {});
+
+                usernamePage.classList.add('hidden');
+                chatPage.classList.remove('hidden');
+                connectingElement.classList.add('hidden');
+            },
             onError
         );
     } catch (error) {
@@ -476,7 +485,7 @@ function addOnlineCountElement() {
     countSpan.style.fontSize = '14px';
 }
 
-// Gọi hàm này khi trang được load
+// G���i hàm này khi trang được load
 document.addEventListener('DOMContentLoaded', addOnlineCountElement);
 
 // Thêm xử lý file input

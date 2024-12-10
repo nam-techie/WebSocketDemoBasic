@@ -10,7 +10,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 @Controller
@@ -21,6 +23,9 @@ public class ChatController {
 
     @Autowired
     private WebSocketEventListener webSocketEventListener;
+
+    @Autowired
+    private SimpMessagingTemplate template;
 
     @MessageMapping("/chat.sendMessage")
     @SendTo("/topic/public")
@@ -92,8 +97,20 @@ public class ChatController {
             @Payload ChatMessage chatMessage,
             SimpMessageHeaderAccessor headerAccessor
     ) {
-        logger.info("User joined: {}", chatMessage.getSender());
-        headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
+        String username = chatMessage.getSender();
+        logger.info("User joined: {}", username);
+        
+        // Thêm username vào session
+        headerAccessor.getSessionAttributes().put("username", username);
+        
+        // Thêm user vào danh sách online users
+        webSocketEventListener.getOnlineUsers().put(username, LocalDateTime.now());
+        
+        // Gửi cập nhật số lượng người dùng online
+        int onlineCount = webSocketEventListener.getOnlineUsers().size();
+        logger.info("Current online users: {}", onlineCount);
+        this.template.convertAndSend("/topic/online-count", String.valueOf(onlineCount));
+        
         return chatMessage;
     }
 
